@@ -7,112 +7,89 @@ const sketchFolder = currentSourcePath().substr(0, currentSourcePath().len - "/m
 #Link with the static library.
 {.passL: sketchFolder & ".libs/libminisketch.a".}
 
-#Sketch object.
-type Sketch {.header: "minisketch.h", importc: "minisketch".}
+{.push, header: "minisketch.h".}
 
-discard """
-/** Determine whether support for elements of `bits` bits was compiled in. */
-int minisketch_bits_supported(uint32_t bits);
+#Sketch data types.
+type
+    SketchObj {.header: "minisketch.h", importc: "minisketch".} = object
+    Sketch* = ptr SketchObj
 
-/** Determine the maximum number of implementations available.
- *
- * Multiple implementations may be available for a given element size, with
- * different performance characteristics on different hardware.
- *
- * Each implementation is identified by a number from 0 to the output of this
- * function call, inclusive. Note that not every combination of implementation
- * and element size may exist (see further).
-*/
-uint32_t minisketch_implementation_max();
+#Highest implementation number available.
+proc implementationMax*(): uint32 {.importc: "minisketch_implementation_max".}
 
-/** Construct a sketch for a given element size, implementation and capacity.
- *
- * If the combination of `bits` and `implementation` is unavailable, or if
- * `capacity` is 0, NULL is returned.
- * If the result is not NULL, it must be destroyed using minisketch_destroy.
- */
-minisketch* minisketch_create(uint32_t bits, uint32_t implementation, size_t capacity);
+#Constructor.
+proc newMinisketch*(
+    bits: uint32,
+    impl: uint32,
+    capacity: csize
+): Sketch {.importc: "minisketch_create".}
 
-/** Get the element size of a sketch in bits. */
-uint32_t minisketch_bits(const minisketch* sketch);
+#Capacity.
+proc capacity*(
+    sketch: Sketch
+): csize {.importc: "minisketch_capacity".}
 
-/** Get the capacity of a sketch. */
-size_t minisketch_capacity(const minisketch* sketch);
+#Add an element.
+proc add*(
+    sketch: Sketch,
+    elem: uint64
+) {.importc: "minisketch_add_uint64".}
 
-/** Get the implementation of a sketch. */
-uint32_t minisketch_implementation(const minisketch* sketch);
+#Serialization.
+proc serializedSize(
+    sketch: Sketch
+): csize {.importc: "minisketch_serialized_size".}
 
-/** Set the seed for randomizing algorithm choices to a fixed value.
- *
- * By default, sketches are initialized with a random seed. This is important
- * to avoid scenarios where an attacker could force worst-case behavior.
- *
- * This function initializes the seed to a user-provided value (any 64-bit
- * integer is acceptable, regardless of field size).
- *
- * When seed is -1, a fixed internal value with predictable behavior is
- * used. It is only intended for testing.
- */
-void minisketch_set_seed(minisketch* sketch, uint64_t seed);
+proc serialize(
+    sketch: Sketch,
+    output: cstring
+) {.importc: "minisketch_serialize".}
 
-/** Clone a sketch.
- *
- * The result must be destroyed using minisketch_destroy.
- */
-minisketch* minisketch_clone(const minisketch* sketch);
+#Parse a Sketch.
+proc parse(
+    sketch: Sketch,
+    input: cstring
+) {.importc: "minisketch_deserialize".}
 
-/** Destroy a sketch.
- *
- * The pointer that was passed in may not be used anymore afterwards.
- */
-void minisketch_destroy(minisketch* sketch);
+#Return the differences from merged sketches.
+proc decode(
+    sketch: Sketch,
+    max: csize,
+    output: ptr uint64
+): csize {.importc: "minisketch_decode".}
 
-/** Compute the size in bytes for serializing a given sketch. */
-size_t minisketch_serialized_size(const minisketch* sketch);
+#Destroy a sketch.
+proc destroy*(
+    sketch: Sketch
+) {.importc: "minisketch_destroy".}
 
-/** Serialize a sketch to bytes. */
-void minisketch_serialize(const minisketch* sketch, unsigned char* output);
+{.pop.}
 
-/** Deserialize a sketch from bytes. */
-void minisketch_deserialize(minisketch* sketch, const unsigned char* input);
+#Serialize a sketch.
+proc serialize*(
+    sketch: Sketch
+): string =
+    result = newString(sketch.serializedSize())
+    sketch.serialize(addr result[0])
 
-/** Add an element to a sketch.
- *
- * If the element to be added is too large for the sketch, the most significant
- * bits of the element are dropped. More precisely, if the element size of
- * `sketch` is b bits, then this function adds the unsigned integer represented
- * by the b least significant bits of `element` to `sketch`.
- *
- * If the element to be added is 0 (after potentially dropping the most significant
- * bits), then this function is a no-op. Sketches cannot contain an element with
- * the value 0.
- */
-void minisketch_add_uint64(minisketch* sketch, uint64_t element);
+#Merge a sketch.
+#Doesn't use parse and then the Minisketch provided merge.
+#That requires parsing a second sketch and merging with that.
+#This xors the serializations and parses back into the passed in sketch.
+proc merge*(
+    sketch: Sketch,
+    otherStr: string
+) =
+    var difference: string = sketch.serialize()
+    for c in 0 ..< difference.len:
+        difference[c] = char(uint8(difference[c]) xor uint8(otherStr[c]))
+    sketch.parse(addr difference[0])
 
-/** Merge the elements of another sketch into this sketch.
- *
- * After merging, `sketch` will contain every element that existed in one but not
- * both of the input sketches. It can be seen as an exclusive or operation on
- * the set elements.  If the capacity of `other_sketch` is lower than `sketch`'s,
- * merging reduces the capacity of `sketch` to that of `other_sketch`.
- *
- * This function returns the capacity of `sketch` after merging has been performed
- * (where this capacity is at least 1), or 0 to indicate that merging has failed because
- * the two input sketches differ in their element size or implementation. If 0 is
- * returned, `sketch` (and its capacity) have not been modified.
- *
- * It is also possible to perform this operation directly on the serializations
- * of two sketches with the same element size and capacity by performing a bitwise XOR
- * of the serializations.
- */
-size_t minisketch_merge(minisketch* sketch, const minisketch* other_sketch);
-
-/** Decode a sketch.
- *
- * `output` is a pointer to an array of `max_element` uint64_t's, which will be
- * filled with the elements in this sketch.
- *
- * The return value is the number of decoded elements, or -1 if decoding failed.
- */
-ssize_t minisketch_decode(const minisketch* sketch, size_t max_elements, uint64_t* output);
-"""
+#Return the differences from merged sketches.
+proc decode*(
+    sketch: Sketch
+): seq[uint64] =
+    result = newSeq[uint64](sketch.capacity)
+    var differences: csize = sketch.decode(sketch.capacity, addr result[0])
+    while differences != result.len:
+        result.del(result.len - 1)

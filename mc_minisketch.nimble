@@ -1,4 +1,4 @@
-version     = "0.8.0"
+version     = "0.8.1"
 author      = "Luke Parker"
 description = "A Nim Wrapper for the Minisketch library."
 license     = "MIT"
