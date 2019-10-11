@@ -18,7 +18,7 @@ type
 proc implementationMax*(): uint32 {.importc: "minisketch_implementation_max".}
 
 #Constructor.
-proc newMinisketch*(
+proc newSketch*(
     bits: uint32,
     impl: uint32,
     capacity: csize
@@ -91,5 +91,7 @@ proc decode*(
 ): seq[uint64] =
     result = newSeq[uint64](sketch.capacity)
     var differences: csize = sketch.decode(sketch.capacity, addr result[0])
+    if differences == -1:
+        raise newException(ValueError, "The amount of differences is greater than the capacity.")
     while differences != result.len:
         result.del(result.len - 1)
