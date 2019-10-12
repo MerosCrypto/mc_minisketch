@@ -10,9 +10,7 @@ const sketchFolder = currentSourcePath().substr(0, currentSourcePath().len - "/m
 {.push, header: "minisketch.h".}
 
 #Sketch data types.
-type
-    SketchObj {.header: "minisketch.h", importc: "minisketch".} = object
-    Sketch* = ptr SketchObj
+type Sketch* {.importc: "minisketch*".} = object
 
 #Highest implementation number available.
 proc implementationMax*(): uint32 {.importc: "minisketch_implementation_max".}
