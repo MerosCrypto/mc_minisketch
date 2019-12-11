@@ -7,6 +7,9 @@ const sketchFolder = currentSourcePath().substr(0, currentSourcePath().len - "/m
 #Link with the static library.
 {.passL: sketchFolder & ".libs/libminisketch.a".}
 
+#Link with the C++ standard library.
+{.passL: "-lstdc++".}
+
 {.push, header: "minisketch.h".}
 
 #Sketch data types.
