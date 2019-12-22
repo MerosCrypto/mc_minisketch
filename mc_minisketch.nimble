@@ -6,19 +6,16 @@ description = "A Nim Wrapper for the Minisketch library."
 license     = "MIT"
 
 installFiles = @[
-    ".gitmodules",
-    "LICENSE.md",
-    "README.md",
     "mc_minisketch.nim"
 ]
 
 installDirs = @[
-    ".git"
+    "minisketch"
 ]
 
 requires "nim >= 0.20.2"
 
-after install:
+before install:
     let gitExe: string = system.findExe("git")
     if gitExe == "":
         echo "Failed to find executable `git`."
