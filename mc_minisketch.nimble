@@ -16,20 +16,12 @@ installDirs = @[
 requires "nim >= 0.20.2"
 
 before install:
-    let gitExe: string = system.findExe("git")
-    if gitExe == "":
-        echo "Failed to find executable `git`."
-        quit(1)
-
     let makeExe: string = system.findExe("make")
     if makeExe == "":
         echo "Failed to find executable `make`."
         quit(1)
 
-    withDir projectDir():
-        exec gitExe & " submodule update --init --recursive"
-
-    withDir projectDir() / "minisketch":
+    withDir thisDir() / "minisketch":
         exec "./autogen.sh"
         exec "./configure"
         exec makeExe
