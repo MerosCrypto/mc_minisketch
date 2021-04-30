@@ -4,14 +4,14 @@ import algorithm
 
 var sketchA: Sketch = newSketch(12, 0, 4)
 for i in 3000 ..< 3010:
-    sketchA.add(uint64(i))
+  sketchA.add(uint64(i))
 
 var serialized: string = sketchA.serialize()
 assert(serialized.len == 12 * 4 div 8)
 
 var sketchB: Sketch = newSketch(12, 0, 4)
 for i in 3002 ..< 3012:
-    sketchB.add(uint64(i))
+  sketchB.add(uint64(i))
 
 sketchB.merge(serialized)
 

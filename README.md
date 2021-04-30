@@ -1,6 +1,6 @@
 # Minisketch
 
-A Nim Wrapper for the Minisketch library.
+A Nim wrapper for Minisketch.
 
 ## Installation
 

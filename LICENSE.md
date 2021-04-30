@@ -1,10 +1,6 @@
-The Minisketch library is under the MIT License, copyright (c) 2018 Pieter Wuille, Greg Maxwell, Gleb Naumenko.
-
-The Nim Wrapper around Minisketch is released under the following license:
-
 MIT License
 
-Copyright (c) 2019 Luke Parker
+Copyright (c) 2019-2021 Luke Parker
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
